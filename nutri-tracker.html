@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personalized Health Plan</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Configure Tailwind to use Inter font and custom colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                   colors: {
+    'primary': '#2563eb',   // Blue
+    'secondary': '#1d4ed8',
+    'accent': '#3b82f6',
+}
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Base styling for the app container */
+        .app-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+        /* Card styling */
+        .card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border-radius: 1.5rem;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 900px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Hide elements initially for page switching */
+        .page { display: none; }
+        /* Style for the weekly plan table */
+        .plan-table th, .plan-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            /* Ensure text wraps in the small cells on mobile */
+            word-wrap: break-word; 
+            min-width: 80px; /* Minimum width for readability on small screens */
+        }
+        
+        /* === STYLING CHANGE: Headings updated to dark text on light background for visibility === */
+        .plan-table th {
+            background-color: #e5e7eb; /* Light gray background */
+            color: #1f2937; /* Dark gray/nearly black text */
+            font-weight: 700; /* Extra bold text */
+            font-size: 0.75rem; /* Smaller font for more columns */
+        }
+        /* ===================================================================================== */
+        
+        .plan-table td {
+            font-size: 0.7rem; /* Even smaller font for content */
+        }
+        .plan-table tr:last-child td {
+            border-bottom: none;
+        }
+        /* Adjusting for responsive overflow for the 6-column table */
+        #page4 .overflow-x-auto {
+            max-width: 100%;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body class="font-sans bg-cover bg-center min-h-screen flex items-center justify-center"
+style="background-image: url('images/bg1.webp');">
+
+<div class="app-container">
+    
+    <!-- Main Application Card -->
+    <div id="appCard" class="card">
+        <h1 id="pageTitle" class="text-3xl font-bold text-center text-blue-600 mb-6">
+Welcome
+</h1>
+
+<div id="page1" class="page">
+
+<div class="bg-white/80 backdrop-blur-md p-6 rounded-2xl shadow-xl">
+
+<div class="flex justify-center mb-6 space-x-4">
+    <button onclick="toggleAuth('login')" id="loginTab"
+        class="px-4 py-2 rounded-lg bg-primary text-white font-semibold">
+        Login
+    </button>
+
+    <button onclick="toggleAuth('signup')" id="signupTab"
+        class="px-4 py-2 rounded-lg bg-gray-200 font-semibold">
+        Sign Up
+    </button>
+</div>
+
+<!-- LOGIN FORM -->
+<form id="loginForm" class="space-y-4">
+    <div>
+        <label>Email</label>
+        <input type="email" id="loginEmail" required
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+    </div>
+
+    <div>
+        <label>Password</label>
+        <input type="password" id="loginPassword" required
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+    </div>
+
+    <button type="submit"
+    class="w-full bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+    Login
+    </button>
+</form>
+
+<!-- SIGNUP FORM -->
+<form id="signupForm" class="space-y-4 hidden">
+    <div>
+        <label>Name</label>
+        <input type="text" id="signupUsername" required
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+    </div>
+
+    <div>
+        <label>Email</label>
+        <input type="email" id="signupEmail" required
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+    </div>
+
+    <div>
+        <label>Password</label>
+        <input type="password" id="signupPassword" required
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+    </div>
+
+    <button type="submit"
+    class="w-full bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+    Create Account
+    </button>
+</form>
+
+</div>
+</div>
+        
+        <!-- ============================================== -->
+        <!-- PAGE 2: User Input & Calorie/BMI Calculation -->
+        <!-- ============================================== -->
+        <div id="page2" class="page">
+            <p class="text-center text-gray-600 mb-6">Please enter your physical and preference details.</p>
+            <form id="detailsForm">
+                
+                <div class="space-y-4">
+                    <!-- Name -->
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <input type="text" id="name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
+                    </div>
+
+                    <!-- Age and Gender - Grouped -->
+                    <div class="flex space-x-4">
+                        <div class="flex-1">
+                            <label for="age" class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                            <input type="number" id="age" required min="10" max="100" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                            <div class="flex items-center space-x-4 h-11">
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="gender" value="male" required class="form-radio text-primary focus:ring-primary">
+                                    <span class="ml-2 text-gray-700">Male</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="gender" value="female" class="form-radio text-primary focus:ring-primary">
+                                    <span class="ml-2 text-gray-700">Female</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Height (cm), Current Weight (kg), and Target Weight (kg) - Grouped for better mobile view -->
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label for="height" class="block text-sm font-medium text-gray-700 mb-1">Height (cm)</label>
+                            <input type="number" id="height" required min="50" max="250" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
+                        </div>
+                        <div>
+                            <label for="weight" class="block text-sm font-medium text-gray-700 mb-1">Current Weight (kg)</label>
+                            <input type="number" id="weight" required min="20" max="300" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
+                        </div>
+                         <div>
+                            <label for="targetWeight" class="block text-sm font-medium text-gray-700 mb-1">Target Weight (kg)</label>
+                            <input type="number" id="targetWeight" required min="20" max="300" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
+                        </div>
+                    </div>
+                    
+                    <!-- Activity Level -->
+                    <div>
+                        <label for="activity" class="block text-sm font-medium text-gray-700 mb-1">Activity Level (per week)</label>
+                        <select id="activity" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary bg-white">
+                            <option value="1.2">Low (Mostly sedentary)</option>
+                            <option value="1.375">Light (1-3 days exercise)</option>
+                            <option value="1.55" selected>Moderate (3-5 days exercise)</option>
+                            <option value="1.725">High (6-7 days exercise)</option>
+                            <option value="1.9">Very High (Daily intense exercise)</option>
+                        </select>
+                    </div>
+
+                    <!-- Diet Preference -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Diet Preference</label>
+                        <div class="flex space-x-4">
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="diet" value="Veg" required class="form-radio text-accent focus:ring-accent">
+                                <span class="ml-2 text-gray-700">Veg</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="diet" value="Non-Veg" class="form-radio text-accent focus:ring-accent">
+                                <span class="ml-2 text-gray-700">Non-Veg</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="diet" value="Both" checked class="form-radio text-accent focus:ring-accent">
+                                <span class="ml-2 text-gray-700">Both</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Allergic Items -->
+                    <div>
+                        <label for="allergies" class="block text-sm font-medium text-gray-700 mb-1">Allergic Items (e.g., Peanuts, Dairy, Gluten)</label>
+                        <textarea id="allergies" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary" placeholder="Enter 'None' if no known allergies..."></textarea>
+                    </div>
+
+                </div>
+
+                <div class="mt-8">
+                    <button type="submit" class="w-full bg-primary hover:bg-secondary text-white font-semibold py-3 rounded-lg transition duration-200 shadow-md">
+                        Calculate Goals & View Summary
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- PAGE 3: User Details & Calculated Goals -->
+        <!-- ============================================== -->
+        <div id="page3" class="page">
+            <h2 class="text-2xl font-semibold text-primary mb-4 text-center">Your Health Summary</h2>
+            
+            <div class="bg-indigo-50 p-6 rounded-xl shadow-inner mb-6 space-y-3">
+                <p class="text-lg font-bold text-primary border-b border-indigo-200 pb-2">Personal Information</p>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <p class="font-medium text-gray-700">Name:</p><p id="sumName" class="font-semibold text-gray-900 truncate"></p>
+                    <p class="font-medium text-gray-700">Age / Gender:</p><p id="sumAgeGender" class="font-semibold text-gray-900"></p>
+                    <p class="font-medium text-gray-700">Diet Preference:</p><p id="sumDiet" class="font-semibold text-gray-900"></p>
+                    <p class="font-medium text-gray-700">Allergies:</p><p id="sumAllergies" class="font-semibold text-gray-900 break-words"></p>
+                </div>
+                
+                <p class="text-lg font-bold text-primary border-b border-indigo-200 pb-2 pt-4">Physical Targets</p>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <p class="font-medium text-gray-700">Current Weight:</p><p id="sumCurrentW" class="font-semibold text-gray-900"></p>
+                    <p class="font-medium text-gray-700">Target Weight:</p><p id="sumTargetW" class="font-semibold text-gray-900"></p>
+                    <p class="font-medium text-gray-700">Activity Level:</p><p id="sumActivity" class="font-semibold text-gray-900"></p>
+                </div>
+            </div>
+
+            <!-- Goal Cards -->
+            <div class="grid md:grid-cols-2 gap-4">
+                
+                <div class="bg-white border border-primary p-4 rounded-xl text-center shadow-lg">
+                    <p class="text-sm font-medium text-primary">Body Mass Index (BMI)</p>
+                    <p id="sumBMI" class="text-4xl font-extrabold text-primary mt-1">...</p>
+                    <p id="sumBMICategory" class="text-xs font-semibold mt-2 px-2 py-1 rounded-full inline-block bg-primary/20 text-primary"></p>
+                </div>
+                
+                <div class="bg-white border border-accent p-4 rounded-xl text-center shadow-lg">
+                    <p class="text-sm font-medium text-accent">Daily Calorie Target</p>
+                    <p id="sumCalories" class="text-4xl font-extrabold text-accent mt-1">...</p>
+                    <p class="text-xs text-gray-500 mt-2">kCal to maintain current weight.</p>
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-between">
+                <button onclick="changePage(2)" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition duration-200">
+                    &larr; Back to Input
+                </button>
+                <button onclick="changePage(4)" class="bg-primary hover:bg-secondary text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                    View Weekly Plan &rarr;
+                </button>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- PAGE 4: 7-Day Weekly Plan (Dynamic Content) -->
+        <!-- ============================================== -->
+        <div id="page4" class="page">
+            <h2 class="text-2xl font-semibold text-primary mb-4 text-center">Your Sample 7-Day Plan</h2>
+            <p class="text-sm text-gray-600 mb-4 text-center">Plan tailored for a balanced diet. Total daily target: <span id="planTargetCalorie" class="font-bold">2000</span> kCal (Varies by weight goal).</p>
+            <p id="allergyWarning" class="text-xs text-red-600 mb-4 text-center hidden font-medium">Warning: Some meals were modified or removed due to your specified allergies: <span id="allergyList"></span></p>
+
+            <div class="overflow-x-auto rounded-lg border border-gray-200">
+                <table class="plan-table w-full text-sm">
+                    <thead>
+                        <tr>
+                            <!-- 6 columns for meals only, as requested -->
+                            <th class="w-[10%]">Day</th>
+                            <th class="w-[18%]">Breakfast</th>
+                            <th class="w-[18%]">Mid-Morning Snack</th>
+                            <th class="w-[18%]">Lunch</th>
+                            <th class="w-[18%]">Evening Snack</th>
+                            <th class="w-[18%]">Dinner</th>
+                        </tr>
+                    </thead>
+                    <tbody id="planBody">
+                        <!-- Content will be inserted dynamically by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-8 flex justify-between">
+                <button onclick="changePage(3)" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition duration-200">
+                    &larr; Back to Summary
+                </button>
+                <button onclick="openDashboard()" class="bg-accent hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                    Save Plan
+                </button>
+            </div>
+        </div>
+        <!-- PAGE 5 DASHBOARD -->
+        <div id="page5" class="page">
+
+            <h2 class="text-2xl font-semibold text-primary mb-6 text-center">
+                My Dashboard
+            </h2>
+
+            <!-- Nutrition Cards -->
+            <div class="grid grid-cols-2 gap-4 mb-6">
+
+                <div class="bg-white p-4 rounded-xl shadow text-center">
+                    <p class="text-gray-500 text-sm">Total Calories</p>
+                    <p id="dashCalories" class="text-3xl font-bold text-blue-600">0</p>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow text-center">
+                    <p class="text-gray-500 text-sm">Protein</p>
+                    <p id="dashProtein" class="text-3xl font-bold text-green-600">0 g</p>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow text-center">
+                    <p class="text-gray-500 text-sm">Carbs</p>
+                    <p id="dashCarbs" class="text-3xl font-bold text-yellow-600">0 g</p>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow text-center">
+                    <p class="text-gray-500 text-sm">Fat</p>
+                    <p id="dashFat" class="text-3xl font-bold text-red-500">0 g</p>
+                </div>
+
+            </div>
+
+            <!-- Chart -->
+            <div class="mt-8 bg-white p-6 rounded-xl shadow">
+
+                <h3 class="text-xl font-bold text-center mb-4">
+                    Nutrition Distribution
+                </h3>
+
+                <canvas id="macroChart" style="max-height:300px;"></canvas>
+
+            </div>
+
+            <!-- Button -->
+            <div class="text-center mt-6">
+                <button onclick="changePage(4)"
+                    class="bg-primary text-white px-6 py-2 rounded-lg">
+                    View Weekly Plan
+                </button>
+            </div>
+
+        </div>
+
+        
+    </div>
+
+
+
+
+</div>
+
+<script>
+
+let foodDataset = [];
+const userData = {};
+let currentPage = 1;
+let weeklyCalories = [];
+let weeklyMeals = [];  
+
+/* ===============================
+   LOAD DATASET
+================================= */
+fetch("foods.json")
+  .then(res => res.json())
+  .then(data => {
+      foodDataset = data;
+      console.log("Dataset Loaded ✅");
+  })
+  .catch(error => console.error("Error loading dataset:", error));
+
+
+/* ===============================
+   SMART PLAN GENERATOR
+================================= */
+function generateSmartPlan(tdee, dietType) {
+
+    if (!foodDataset.length) {
+        alert("Dataset not loaded yet!");
+        return null;
+    }
+
+    const breakfastTarget = tdee * 0.25;
+    const lunchTarget = tdee * 0.35;
+    const snackTarget = tdee * 0.10;
+    const dinnerTarget = tdee * 0.30;
+
+    const filteredFoods = foodDataset.filter(food =>
+        dietType === "Both" || food.diet === dietType
+    );
+
+    if (!filteredFoods.length) {
+        alert("No foods available for selected diet!");
+        return null;
+    }
+
+    function pickMeal(target) {
+        return filteredFoods.reduce((prev, curr) =>
+            Math.abs(curr.calories - target) <
+            Math.abs(prev.calories - target) ? curr : prev
+        );
+    }
+
+    return {
+        breakfast: pickMeal(breakfastTarget),
+        lunch: pickMeal(lunchTarget),
+        snack: pickMeal(snackTarget),
+        dinner: pickMeal(dinnerTarget)
+    };
+}
+function generateWeeklyPlan(){
+
+    weeklyCalories = [];
+    weeklyMeals = [];
+
+    const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    let html = "";
+
+    const target = Number(userData?.targetCalories || 0);
+    const dietType = userData?.diet;
+
+    const breakfastTarget = target * 0.25;
+    const lunchTarget = target * 0.35;
+    const snackTarget = target * 0.10;
+    const dinnerTarget = target * 0.30;
+
+    // ✅ SAFE DIET FILTER
+   const goalType = userData.goalType || "maintain";
+
+const filteredFoods = foodDataset.filter(food => {
+
+    const type = String(food?.["Diet_Type"] || "").toLowerCase();
+
+    const calories = Number(food?.["Calories (kcal)"] || 0);
+    const protein = Number(food?.["Protein (g)"] || 0);
+    const fat = Number(food?.["Fat (g)"] || 0);
+    const carbs = Number(food?.["Carbohydrates (g)"] || 0);
+
+    // Diet filter
+   if (dietType === "Veg" && !type.includes("veg")) return false;
+    if (dietType === "Non-Veg" && !(type.includes("non"))) return false;
+
+    // Goal based filter
+    if (goalType === "loss") {
+        return calories < 400 && protein >= 10 && fat < 15;
+    }
+
+    if (goalType === "gain") {
+        return calories > 250 && carbs >= 20;
+    }
+
+    return true;
+});
+const allergies = (userData.allergies || "").toLowerCase();
+
+const safeFoods = allergies === "none"
+    ? filteredFoods
+    : filteredFoods.filter(food => {
+        const name = String(food?.["Food_Item"] || "").toLowerCase();
+        return !allergies.split(",").some(a => name.includes(a.trim()));
+    });
+
+    // ✅ SAFE MEAL FILTER
+   const breakfastFoods = safeFoods.filter(f =>
+    String(f?.["Meal_Type"] || "").toLowerCase() === "breakfast"
+);
+
+const lunchFoods = safeFoods.filter(f =>
+    String(f?.["Meal_Type"] || "").toLowerCase() === "lunch"
+);
+
+const snackFoods = safeFoods.filter(f =>
+    String(f?.["Meal_Type"] || "").toLowerCase() === "snack"
+);
+
+const dinnerFoods = safeFoods.filter(f =>
+    String(f?.["Meal_Type"] || "").toLowerCase() === "dinner"
+);
+if (!breakfastFoods.length) breakfastFoods.push(...safeFoods);
+if (!lunchFoods.length) lunchFoods.push(...safeFoods);
+if (!snackFoods.length) snackFoods.push(...safeFoods);
+if (!dinnerFoods.length) dinnerFoods.push(...safeFoods);
+let usedFoods = new Set();
+  function pickClosest(arr, targetCalories, dayUsed){
+
+    if(!arr || arr.length === 0) return null;
+
+    // 🔥 FILTER RANGE (IMPORTANT)
+    const rangeFoods = arr.filter(f => {
+        const cal = Number(f?.["Calories (kcal)"] || 0);
+        return cal >= (targetCalories - 100) && cal <= (targetCalories + 100);
+    });
+
+    const source = rangeFoods.length ? rangeFoods : arr;
+
+    // 🔥 RANDOM PICK
+    const shuffled = [...source].sort(() => Math.random() - 0.5);
+
+    for (let food of shuffled) {
+        const name = food?.["Food_Item"];
+
+        if (name && !usedFoods.has(name) && !dayUsed.has(name)) {
+            usedFoods.add(name);
+            dayUsed.add(name);
+            return food;
+        }
+    }
+
+    return shuffled[0];
+}
+
+    for(let i=0;i<7;i++){
+         const dayUsed = new Set(); 
+
+        const breakfast = pickClosest(breakfastFoods, breakfastTarget, dayUsed);
+const snack1 = pickClosest(snackFoods, snackTarget, dayUsed);
+const lunch = pickClosest(lunchFoods, lunchTarget, dayUsed);
+const snack2 = pickClosest(snackFoods, snackTarget, dayUsed);
+const dinner = pickClosest(dinnerFoods, dinnerTarget, dayUsed);
+        weeklyMeals.push({ breakfast, snack1, lunch, snack2, dinner });
+
+        let totalCalories =
+        Number(breakfast?.["Calories (kcal)"] || 0) +
+        Number(snack1?.["Calories (kcal)"] || 0) +
+        Number(lunch?.["Calories (kcal)"] || 0) +
+        Number(snack2?.["Calories (kcal)"] || 0) +
+        Number(dinner?.["Calories (kcal)"] || 0);
+
+        weeklyCalories.push(totalCalories);
+
+        html += `
+        <tr>
+        <td>${days[i]}</td>
+        <td>${breakfast?.["Food_Item"] || "-"} (${breakfast?.["Calories (kcal)"] || 0} kcal)</td>
+        <td>${snack1?.["Food_Item"] || "-"} (${snack1?.["Calories (kcal)"] || 0} kcal)</td>
+        <td>${lunch?.["Food_Item"] || "-"} (${lunch?.["Calories (kcal)"] || 0} kcal)</td>
+        <td>${snack2?.["Food_Item"] || "-"} (${snack2?.["Calories (kcal)"] || 0} kcal)</td>
+        <td>${dinner?.["Food_Item"] || "-"} (${dinner?.["Calories (kcal)"] || 0} kcal)</td>
+        </tr>
+        `;
+    }
+
+    document.getElementById("planBody").innerHTML = html;
+}
+function calculateMacros(){
+
+let protein = 0;
+let carbs = 0;
+let fat = 0;
+
+weeklyMeals.forEach(day => {
+
+let snackProtein =
+Number(day.snack1["Protein (g)"]) +
+Number(day.snack2["Protein (g)"]);
+
+let snackCarbs =
+Number(day.snack1["Carbohydrates (g)"]) +
+Number(day.snack2["Carbohydrates (g)"]);
+
+let snackFat =
+Number(day.snack1["Fat (g)"]) +
+Number(day.snack2["Fat (g)"]);
+
+protein += 
+Number(day.breakfast["Protein (g)"]) +
+snackProtein +
+Number(day.lunch["Protein (g)"]) +
+Number(day.dinner["Protein (g)"]);
+
+carbs += 
+Number(day.breakfast["Carbohydrates (g)"]) +
+snackCarbs +
+Number(day.lunch["Carbohydrates (g)"]) +
+Number(day.dinner["Carbohydrates (g)"]);
+
+fat += 
+Number(day.breakfast["Fat (g)"]) +
+snackFat +
+Number(day.lunch["Fat (g)"]) +
+Number(day.dinner["Fat (g)"]);
+
+});
+
+return {
+protein: Math.round(protein / 7),
+carbs: Math.round(carbs / 7),
+fat: Math.round(fat / 7)
+};
+
+}
+function renderMacroChart(macros) {
+
+    const ctx = document.getElementById("macroChart").getContext("2d");
+
+    new Chart(ctx, {
+        type: "doughnut",
+        data: {
+            labels: ["Protein", "Carbs", "Fat"],
+            datasets: [{
+                data: [
+                    macros.protein,
+                    macros.carbs,
+                    macros.fat
+                ],
+                backgroundColor: [
+                    "#22c55e",
+                    "#facc15",
+                    "#ef4444"
+                ]
+            }]
+        }
+    });
+
+}
+function renderActivityChart(){
+
+const ctx = document.getElementById("activityChart");
+
+new Chart(ctx,{
+type:"line",
+data:{
+labels:["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
+datasets:[{
+data:weeklyCalories,
+borderColor:"#22c55e",
+backgroundColor:"rgba(34,197,94,0.2)",
+fill:true,
+tension:0.4
+}]
+}
+});
+
+}
+function openDashboard(){
+
+fetch("http://localhost:8082/nutrition/calculate", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+        name: userData.name,
+        email: "test@gmail.com",
+        password: "1234",
+        weight: parseFloat(userData.weight),
+        height: parseFloat(userData.height),
+        age: parseInt(userData.age)
+    })
+})
+.then(res => res.json())
+.then(data => {
+
+    // ✅ Update dashboard values
+    document.getElementById("dashCalories").textContent = Math.round(data.totalCalories);
+    document.getElementById("dashProtein").textContent = Math.round(data.protein) + " g";
+    document.getElementById("dashCarbs").textContent = Math.round(data.carbs) + " g";
+    document.getElementById("dashFat").textContent = Math.round(data.fats) + " g";
+
+    // ✅ Move page change here
+    changePage(5);
+
+    // ✅ Create macros object for chart
+    const macros = {
+        protein: data.protein,
+        carbs: data.carbs,
+        fat: data.fats
+    };
+
+    // ✅ Now render charts
+    renderMacroChart(macros);
+    renderActivityChart();
+
+})
+.catch(err => console.error(err));
+
+}
+/* ===============================
+   PAGE NAVIGATION
+================================= */
+function changePage(pageNum) {
+
+    document.querySelectorAll('.page').forEach(page => {
+        page.style.display = 'none';
+    });
+
+    const pageElement = document.getElementById(`page${pageNum}`);
+    const titleElement = document.getElementById('pageTitle');
+
+    if (!pageElement) return;
+
+    pageElement.style.display = 'block';
+    currentPage = pageNum;
+
+    if (pageNum === 1) {
+        titleElement.textContent = "Account Registration";
+    }
+
+    else if (pageNum === 2) {
+        titleElement.textContent = "Personal Health Input";
+    }
+
+    else if (pageNum === 3) {
+        titleElement.textContent = "Your Calculated Goals";
+        updateSummaryDisplay();
+    }
+
+   else if (pageNum === 4) {
+
+    titleElement.textContent = "7-Day Weekly Plan";
+
+    document.getElementById('planTargetCalorie').textContent =
+        userData.targetCalories ? userData.targetCalories.toLocaleString() : 'N/A';
+
+    generateWeeklyPlan();
+}
+else if(pageNum === 5){
+titleElement.textContent = "Dashboard";
+}
+}
+
+
+/* ===============================
+   AUTH TOGGLE
+================================= */
+function toggleAuth(type) {
+
+    const loginForm = document.getElementById("loginForm");
+    const signupForm = document.getElementById("signupForm");
+
+    const loginTab = document.getElementById("loginTab");
+    const signupTab = document.getElementById("signupTab");
+
+    if (type === "login") {
+        loginForm.classList.remove("hidden");
+        signupForm.classList.add("hidden");
+
+        loginTab.classList.add("bg-primary", "text-white");
+        signupTab.classList.remove("bg-primary", "text-white");
+        signupTab.classList.add("bg-gray-200");
+    } else {
+        signupForm.classList.remove("hidden");
+        loginForm.classList.add("hidden");
+
+        signupTab.classList.add("bg-primary", "text-white");
+        loginTab.classList.remove("bg-primary", "text-white");
+        loginTab.classList.add("bg-gray-200");
+    }
+}
+
+
+/* ===============================
+   LOGIN / SIGNUP
+================================= */
+document.getElementById("signupForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    fetch("http://localhost:8082/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            name: document.getElementById("signupUsername").value,
+            email: document.getElementById("signupEmail").value,
+            password: document.getElementById("signupPassword").value
+        })
+    })
+    .then(res => res.json())
+    .then(() => {
+        alert("Account Created Successfully!");
+        toggleAuth("login");
+    })
+    .catch(error => console.error(error));
+});
+
+
+document.getElementById("loginForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    fetch("http://localhost:8082/users/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            email: document.getElementById("loginEmail").value,
+            password: document.getElementById("loginPassword").value
+        })
+    })
+    .then(res => {
+        if (!res.ok) {
+            throw new Error("Login failed");
+        }
+        return res.text();
+    })
+    .then(data => {
+        alert(data);
+        changePage(2);
+    })
+    .catch(error => {
+        alert(error.message);
+    });
+});
+
+
+/* ===============================
+   BMI & CALORIE CALCULATION
+================================= */
+function calculateGoals(weight, height, age, activityFactor, gender) {
+
+    const heightMeters = height / 100;
+    const bmi = weight / (heightMeters * heightMeters);
+
+    let bmr;
+
+    if (gender === 'male') {
+        bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+    } else {
+        bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
+    }
+
+    const tdee = bmr * parseFloat(activityFactor);
+
+    return {
+        bmi: bmi.toFixed(1),
+        tdee: Math.round(tdee)
+    };
+}
+
+
+/* ===============================
+   DETAILS FORM SUBMIT
+================================= */
+document.getElementById('detailsForm').addEventListener('submit', function(e) {
+
+    e.preventDefault();
+
+    const goals = calculateGoals(
+        parseFloat(document.getElementById('weight').value),
+        parseFloat(document.getElementById('height').value),
+        parseInt(document.getElementById('age').value),
+        document.getElementById('activity').value,
+        document.querySelector('input[name="gender"]:checked')?.value
+    );
+
+    userData.name = document.getElementById('name').value;
+    userData.age = parseInt(document.getElementById('age').value);
+    userData.gender = document.querySelector('input[name="gender"]:checked')?.value;
+
+    userData.height = document.getElementById('height').value;
+    userData.weight = document.getElementById('weight').value;
+    userData.targetWeight = document.getElementById('targetWeight').value;
+
+    userData.activityText = document.getElementById('activity').options[
+        document.getElementById('activity').selectedIndex
+    ].text;
+
+    userData.allergies = document.getElementById('allergies').value || "None";
+
+    userData.diet = document.querySelector('input[name="diet"]:checked')?.value;
+
+    userData.tdee = goals.tdee;
+    userData.bmi = goals.bmi;
+    let targetCalories = goals.tdee;
+    let goalType = "maintain";
+
+if (parseFloat(userData.targetWeight) < parseFloat(userData.weight)) {
+    goalType = "loss";
+}
+else if (parseFloat(userData.targetWeight) > parseFloat(userData.weight)) {
+    goalType = "gain";
+}
+
+userData.goalType = goalType;
+
+if (parseFloat(userData.targetWeight) < parseFloat(userData.weight)) {
+    // Weight Loss
+    targetCalories = goals.tdee - 500;
+}
+else if (parseFloat(userData.targetWeight) > parseFloat(userData.weight)) {
+    // Weight Gain
+    targetCalories = goals.tdee + 500;
+}
+
+userData.targetCalories = Math.max(1200, targetCalories);
+
+    changePage(3);
+});
+
+/* ===============================
+   UPDATE SUMMARY
+================================= */
+function updateSummaryDisplay() {
+
+    document.getElementById('sumName').textContent = userData.name;
+
+    document.getElementById('sumAgeGender').textContent =
+        `${userData.age} yrs / ${userData.gender}`;
+
+    document.getElementById('sumDiet').textContent = userData.diet;
+
+    document.getElementById('sumAllergies').textContent = userData.allergies;
+
+    document.getElementById('sumCurrentW').textContent =
+        userData.weight + " kg";
+
+    document.getElementById('sumTargetW').textContent =
+        userData.targetWeight + " kg";
+
+    document.getElementById('sumActivity').textContent =
+        userData.activityText;
+
+    document.getElementById('sumBMI').textContent = userData.bmi;
+
+    document.getElementById('sumCalories').textContent =
+    userData.targetCalories;
+}
+
+/* ===============================
+   CUSTOM ALERT
+================================= */
+function alert(message) {
+
+    const alertDiv = document.createElement('div');
+    alertDiv.className =
+        'fixed top-4 right-4 bg-primary text-white p-4 rounded-lg shadow-xl z-50';
+
+    alertDiv.innerHTML = `<p class="font-semibold">${message}</p>`;
+
+    document.body.appendChild(alertDiv);
+
+    setTimeout(() => alertDiv.remove(), 3000);
+}
+
+
+/* ===============================
+   INIT
+================================= */
+window.onload = () => {
+    changePage(1);
+};
+
+</script>
+</body>
+</html>

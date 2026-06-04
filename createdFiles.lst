@@ -1,0 +1,11 @@
+com\nutri\repository\UserRepository.class
+com\nutri\config\WebConfig.class
+com\nutri\NutriTrackerApplication.class
+com\nutri\repository\NutritionResultRepository.class
+com\nutri\service\NutritionService.class
+com\nutri\model\NutritionResult.class
+com\nutri\controller\NutritionController.class
+com\nutri\controller\HelloController.class
+com\nutri\controller\UserController.class
+com\nutri\service\UserService.class
+com\nutri\model\User.class
